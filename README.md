@@ -1,2 +1,2 @@
 # go-tutorial
-go.dev/tutorial
+[Getting started](https://go.dev/doc/)
