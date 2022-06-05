@@ -25,7 +25,6 @@ func albumsByArtist(name string, db *sql.DB) ([]Album, error) {
 	if err != nil {
 		return nil, fmt.Errorf("albumsByArtist %q: %v", name, err)
 	}
-	defer rows.Close()
 	// Loop through rows, using Scan to assign column data to struct fields.
 	for rows.Next() {
 		var alb Album
@@ -54,6 +53,21 @@ func albumsByID(id int64, db *sql.DB) (Album, error) {
 	}
 	return alb, nil
 }
+
+// addAlbum adds the specified album to the database,
+// returning the album ID of the new entry
+func addAlbum(alb Album, db *sql.DB) (int64, error) {
+	result, err := db.Exec("INSERT INTO album (title, artist, price) VALUES (?, ?, ?)", alb.Title, alb.Artist, alb.Price)
+	if err != nil {
+		return 0, fmt.Errorf("addAlbum: %v", err)
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("addAlbum: %v", err)
+	}
+	return id, nil
+}
+
 func main() {
 	// Capture connection properties.
 	cfg := mysql.Config{
@@ -68,7 +82,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	defer db.Close()
 	pingErr := db.Ping()
 	if pingErr != nil {
 		log.Fatal(pingErr)
@@ -86,4 +100,14 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("Album found: %v\n", alb)
+
+	albID, err := addAlbum(Album{
+		Title:  "The Modern Sound of Betty Carter",
+		Artist: "Betty Carter",
+		Price:  49.99,
+	}, db)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("ID of added album: %v\n", albID)
 }
